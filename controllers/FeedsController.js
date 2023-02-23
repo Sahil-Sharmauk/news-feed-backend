@@ -6,6 +6,7 @@ const  fetchAllArticles = async (req,res,next)=>{
     let response = {}
     let allArticles =[]
     let count = 0
+    let pagecount = 0
     try{
         let page = req.body.page
         let pageSize = parseInt(15);
@@ -14,22 +15,44 @@ const  fetchAllArticles = async (req,res,next)=>{
         const {source,search} = req.body
         if(source === 'All'  && search === false){   
             count = await NewsArticlesFeeds.count();
-            if(count-page*pageSize)
-            allArticles = await NewsArticlesFeeds.find().sort({createdAt: -1}).skip((page - 1) * pageSize).limit(pageSize)
+            pagecount = Math.trunc(count/pageSize) +1
+         
+            if(page <= pagecount){
+                allArticles = await NewsArticlesFeeds.find().sort({createdAt: -1}).skip((page - 1) * pageSize).limit(pageSize)
+            }else{
+                response['success']=false
+                response['message']= 'No more results'
+            }
         }else if(source !== 'All' && search === false){
-            count = await NewsArticlesFeeds.count();
-            allArticles = await NewsArticlesFeeds.find({"source.name":source}).sort({createdAt: -1}).skip((page - 1) * pageSize).limit(pageSize)
+            count = await NewsArticlesFeeds.countDocuments({"source.name":source});
+            pagecount = Math.trunc(count/pageSize) +1
+            if(page <= pagecount){
+                allArticles = await NewsArticlesFeeds.find({"source.name":source}).sort({createdAt: -1}).skip((page - 1) * pageSize).limit(pageSize)
+            }else{
+                response['success']=false
+                response['message']= 'No more results'
+            }
         }
         else if(source !== 'All' && search === true){
-            count = await NewsArticlesFeeds.count();
-            allArticles = await NewsArticlesFeeds.find({$text:{$search:source}}) 
+            count = await NewsArticlesFeeds.countDocuments({$text:{$search:source}})
+            pagecount = Math.trunc(count/pageSize) +1
+            console.log("count",count)
+            console.log("pagecount",pagecount)
+            console.log('pageSize',page)
+            if(page <= pagecount){
+                allArticles = await NewsArticlesFeeds.find({$text:{$search:source}}).skip((page - 1) * pageSize).limit(pageSize)
+            }else{
+                response['success']=false
+                response['message']= 'No more results'
+            }
         }
-        if(allArticles.length>0 ){
-            console.log("allArticles::::>",allArticles)        
+        if(allArticles.length>0){
+            // console.log("allArticles::::>",allArticles)        
             response['success']=true
             response['allArticles']=allArticles
         }else{
             response['success']=false
+            response['message']= 'Not found Results'
         }
     }catch(err){
         console.log("Error in fetchAllArticles",err)

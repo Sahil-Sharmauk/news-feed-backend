@@ -1,6 +1,9 @@
 
 const { all } = require('axios')
 const NewsArticlesFeeds = require('../models/newsArticles.model')
+const axios = require('axios')
+const {FETCH_NEWS_URL,API_KEY} =require ('../constant.js')
+
 const  fetchAllArticles = async (req,res,next)=>{
     console.log(req.body)
     let response = {}
@@ -76,4 +79,20 @@ const fetchAllSources = async (req,res,next)=>{
     }
     return res.json(response)
 }
-module.exports = {fetchAllArticles,fetchAllSources}
+
+const fetchTopHeadLines = async (req,res,next)=>{
+    let response = {}
+    let allheadlines=[]
+    try{
+        let topHeadLines = await axios.get(`${FETCH_NEWS_URL}/top-headlines?country=us&apiKey=${API_KEY}`)
+        allheadlines = [topHeadLines.data]
+        response['allheadlines']= allheadlines
+        response['success']=true
+        console.log("top headlines",)
+    }catch(err){
+        console.log("Error in fetchTopHeadLines")
+        response['success']=false
+    }
+return res.json(response)
+}
+module.exports = {fetchAllArticles,fetchAllSources,fetchTopHeadLines}
